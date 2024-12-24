@@ -2,6 +2,7 @@ import { expect, Page } from '@playwright/test'
 import {test} from '../../fixture/index'
 import { FORM_HEADER_SELECTORS, FORM_LABELS } from '../../constant/selector'
 import { FORM_INPUT_SELECTORS } from '../../constant/selector/formInput'
+import UserForm, { FormLabels } from '../../poms/form'
 
 test.describe("Access Control: Password Protection on Form", ()=>{
 
@@ -29,28 +30,21 @@ test.describe("Access Control: Password Protection on Form", ()=>{
     // })
 
     test("should download submissions and verify PDF contents", async({
-        page
+        page,
+        form
     }:{
-        page: Page
+        page: Page,
+        form: UserForm
     })=>{
 
         await test.step("Step 1:Add input fields and publish the form", async()=>{
-            const opinionScale = page.getByRole('button', { name: 'Opinion scale' })
-            await opinionScale.scrollIntoViewIfNeeded()
-            await opinionScale.click()
-            await page.getByPlaceholder('Question').fill("Opinion Scale")
-
-            const startRating = page.getByRole('button', { name: 'Star rating' })
-            await startRating.scrollIntoViewIfNeeded()
-            await startRating.click()
-            await page.getByPlaceholder('Question').fill("Star rating")
-
-            const matrix = page.getByRole('button', { name: 'Matrix' })
-            await matrix.scrollIntoViewIfNeeded()
-            await matrix.click()
-            await page.getByPlaceholder('Question').fill("Matrix")
-
-            await page.getByTestId('publish-button').click()
+            
+            const formLabels : FormLabels[]= [
+                { button:'Opinion scale', question:'Opinion scale' },
+                { button:'Star rating', question:'Star rating' },
+                { button:'Matrix', question:'Matrix'}
+            ]
+            await form.addInputsAndPublish({formLabels})
         })
         
         await test.step("Step 2:Select the values and submit form", async()=>{
@@ -98,6 +92,25 @@ test.describe("Access Control: Password Protection on Form", ()=>{
             await download.saveAs('./e2e/downloads/' + download.suggestedFilename())
     
             await page.close()
+        })
+    })
+
+    test.only("should prefill form using url parameters", async({
+        page,
+        form
+    }:{
+        page:Page,
+        form:UserForm
+    })=>{
+        await test.step("Step 1:Add input fields and publish the form", async()=>{
+            const formLabels : FormLabels[]= [
+                { button:'Opinion scale', question:'Opinion scale' },
+                { button:'Star rating', question:'Rate customer service' },
+                { button:'Matrix', question:'Rate customer representative'}
+            ]
+            await form.addInputsAndPublish({
+                formLabels
+            })
         })
     })
 
