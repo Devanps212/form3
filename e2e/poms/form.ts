@@ -1,11 +1,13 @@
 import { Page } from "@playwright/test";
+import { ROW_COL } from "../constant/text";
 
 export interface FormLabels {
     button:string,
-    question: string
+    question: string,
+    advanceFill?:string
 }
 
-interface RowOrColumn {
+export interface RowOrColumn {
     type: 'row' | 'column';
     placeHolder: string;
     fill: string;
@@ -22,32 +24,17 @@ export default class UserForm{
     }:{
         formLabels:FormLabels[]
     })=>{
-        for(let {button, question} of formLabels){
+        for(let {button, question,advanceFill} of formLabels){
             const label = this.page.getByRole('button', { name: button })
             await label.scrollIntoViewIfNeeded()
             await label.click()
             await this.page.getByPlaceholder('Question').fill(question)
-            if(question === "Rate customer service"){
-                await this.page.getByRole('button', { name: 'Advanced properties' }).click()
-                const advanceInput = this.page.getByPlaceholder('Field code')
-                await advanceInput.clear()
-                await advanceInput.fill("customer_service")
-            }else if(question === "Rate customer representative"){
-
-                const data: RowOrColumn[] = [
-                    { type: 'row', placeHolder: 'Row 1', fill: 'Friendliness' },
-                    { type: 'row', placeHolder: 'Row 2', fill: 'Knowledge' },
-                    { type: 'row', button: 'Add row', placeHolder: 'input-option-2', fill: 'Quickness' },
-                  
-                    { type: 'column', placeHolder: 'Column 1', fill: 'Excellent' },
-                    { type: 'column', placeHolder: 'Column 2', fill: 'Very good' },
-                    { type: 'column', button: 'Add column', placeHolder: 'Column 3', fill: 'Very good' }
-                  ];
-
+            if(question === "Rate customer representative"){ 
                 await this.inputAdd({
-                    data
+                    data: ROW_COL
                 })
-
+            }
+            if(advanceFill){
                 const advance = this.page.getByRole('button', { name: 'Advanced properties' })
                 await advance.scrollIntoViewIfNeeded()
                 await advance.click()
@@ -55,9 +42,8 @@ export default class UserForm{
                 const inputField = this.page.getByPlaceholder('Field code')
                 await inputField.scrollIntoViewIfNeeded()
                 await inputField.clear()
-                await inputField.fill("customer_rep")
-
-            }
+                await inputField.fill(advanceFill)
+            }   
         }
 
         await this.page.getByTestId('publish-button').click()
