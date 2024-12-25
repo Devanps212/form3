@@ -3,6 +3,7 @@ import {test} from '../../fixture/index'
 import { FORM_HEADER_SELECTORS, FORM_LABELS } from '../../constant/selector'
 import { FORM_INPUT_SELECTORS } from '../../constant/selector/formInput'
 import UserForm, { FormLabels } from '../../poms/form'
+import { FORM_LABEL1, FORM_LABEL2 } from '../../constant/text'
 
 test.describe("Access Control: Password Protection on Form", ()=>{
 
@@ -38,13 +39,7 @@ test.describe("Access Control: Password Protection on Form", ()=>{
     })=>{
 
         await test.step("Step 1:Add input fields and publish the form", async()=>{
-            
-            const formLabels : FormLabels[]= [
-                { button:'Opinion scale', question:'Opinion scale' },
-                { button:'Star rating', question:'Star rating' },
-                { button:'Matrix', question:'Matrix'}
-            ]
-            await form.addInputsAndPublish({formLabels})
+            await form.addInputsAndPublish({formLabels: FORM_LABEL1})
         })
         
         await test.step("Step 2:Select the values and submit form", async()=>{
@@ -89,13 +84,14 @@ test.describe("Access Control: Password Protection on Form", ()=>{
             await page.getByTestId('action-dropdown-btn').click()
             const download = await downloadPromise
 
+            await page.waitForTimeout(8000)
             await download.saveAs('./e2e/downloads/' + download.suggestedFilename())
     
             await page.close()
         })
     })
 
-    test.only("should prefill form using url parameters", async({
+    test("should prefill form using url parameters", async({
         page,
         form
     }:{
@@ -103,14 +99,36 @@ test.describe("Access Control: Password Protection on Form", ()=>{
         form:UserForm
     })=>{
         await test.step("Step 1:Add input fields and publish the form", async()=>{
-            const formLabels : FormLabels[]= [
-                { button:'Opinion scale', question:'Opinion scale' },
-                { button:'Star rating', question:'Rate customer service' },
-                { button:'Matrix', question:'Rate customer representative'}
-            ]
             await form.addInputsAndPublish({
-                formLabels
+                formLabels:FORM_LABEL2,
             })
+        })
+        await test.step("Step 2:Verify Form Prefill via URL Parameters", async()=>{
+            const pagePromise = page.waitForEvent('popup')
+            await page.getByTestId('publish-preview-button').click()
+            const page1 = await pagePromise
+
+            const url = page1.url()
+            const queryParams = new URLSearchParams({
+                email: 'sample@gmail.com',
+                customer_rating: '6',
+                customer_service: '4',
+                'customer_rep.Friendliness': 'Excellent',
+                'customer_rep.Knowledge': 'Average',
+                'customer_rep.Quickness': 'Very good'
+            })
+            
+            await page1.goto(`${url}?${queryParams.toString()}`)
+
+            const submit = page1.getByRole('button', { name: 'Submit' })
+            await submit.scrollIntoViewIfNeeded()
+            await submit.click()
+            await expect(page1.locator('div')
+            .filter({ hasText: '🎉Thank You.Your response has' })
+            .nth(3))
+            .toBeVisible({timeout:90000})
+
+            await page1.close()
         })
     })
 
